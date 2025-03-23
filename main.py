@@ -1,0 +1,42 @@
+import argument_based_agent as agent
+import llamaAPI as LLM_API
+
+def get_argument_by_number(file_path, argument_number):
+    with open(file_path, "r") as file:
+        content = file.read()
+    arguments = content.split("\n\n")
+    if argument_number < 1 or argument_number > len(arguments):
+        return "Invalid argument number. Please provide a number between 1 and 25."
+    return arguments[argument_number - 1].strip()
+
+statement = "People should have a right to keep and bear arms."
+
+expression_by_polarity = {
+    "0": "You hate the probability that people may bear arms. You are absolutely negative about this statement.",
+    "1": "You are agains right to bear arms but you may be not so sure.",
+    "2": "You are neutral about right to bear arms.",
+    "3": "You like the idea of the right to bear arms, but you are not so sure.",
+    "4": "You think that right to bear arms is essential. You are fully into allowing people to bear arms.",
+}
+
+# It's not what I want. I want 0 to be agressively against, even not using any positive arguments
+
+pro_arguments = " ".join([get_argument_by_number("pro_arguments.txt", i) for i in [1, 4, 6]])
+con_arguments = " ".join([get_argument_by_number("con_arguments.txt", i) for i in [7, 5, 3, 2]])
+## opinion = LLM_API.callLLM(f"Pro-arguments: {pro_arguments}\nCon-arguments: {con_arguments}. You may use some of them internally but only to make up an opinion to express.", f"Generate opinion about the statement: {statement} using pros and cons and maybe coming up with some new ones. You are more likely to be agains gun legalization, behave more personal, like a human - your opinion may change.")
+# expr = expression_by_polarity["1"]
+# opinion = LLM_API.callLLM(f"Pro-arguments (you won't use them if you are completely against): {pro_arguments}\nCon-arguments (you won't use them if you are in favor): {con_arguments}. You may use some of them internally but only to make up an opinion to express.", f"Generate opinion about the statement: {statement} using pros and cons and maybe coming up with some new ones. {expr}, behave more personal, like a human - your opinion may change.")
+
+agent_instance = agent.Agent(**{
+    "user_id": 1,
+    "pro_arguments": pro_arguments,
+    "con_arguments": con_arguments,
+    "opinion": "",
+    "polarity": 3
+})
+
+# print(agent_instance.polarity)
+
+msg = agent_instance.write_message(statement, expression_by_polarity)
+
+agent_instance.react_to_message(msg, statement)
