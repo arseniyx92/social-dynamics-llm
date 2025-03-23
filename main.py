@@ -28,7 +28,7 @@ agent_instance1 = agent.Agent(**{
     "pro_arguments": pro_arguments,
     "con_arguments": con_arguments,
     "opinion": "",
-    "polarity": 1
+    "polarity": 0
 })
 
 pro_arguments = " ".join([get_argument_by_number("pro_arguments.txt", i) for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]])
@@ -49,14 +49,14 @@ msg2 = agent_instance2.write_message(statement, expression_by_polarity)
 print("Agent2's message: ", msg2, '\n')
 print("Agent2's polarity: ", agent_instance2.polarity, '\n')
 
-reaction = agent_instance1.react_to_message(msg2, statement)
+reaction = agent_instance1.react_to_message(msg2, statement, agent_instance2.user_id)
 print("Agent1's arguments: ", agent_instance1.pro_arguments, '\n=====\n', agent_instance1.con_arguments, '\n')
 
 msg2 = agent_instance2.write_message(statement, expression_by_polarity)
 print("Agent2's message: ", msg2, '\n')
 print("Agent2's polarity: ", agent_instance2.polarity, '\n')
 
-reaction = agent_instance1.react_to_message(msg2, statement)
+reaction = agent_instance1.react_to_message(msg2, statement, agent_instance2.user_id)
 print("Agent1's arguments: ", agent_instance1.pro_arguments, '\n=====\n', agent_instance1.con_arguments, '\n')
 
 msg11 = agent_instance1.write_message(statement, expression_by_polarity)

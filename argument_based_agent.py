@@ -27,7 +27,7 @@ class Agent:
         debug_print(f"#########{self.polarity}#########")
         return self.opinion
 
-    def react_to_message(self, message, statement):
+    def react_to_message(self, message, statement, msg_from_user):
         prompt = f"""React to the message that you have received.
         There are your active arguments. You may use them and also you can devise your new own arguments.
         Pro-arguments: {self.pro_arguments}
@@ -39,7 +39,7 @@ class Agent:
         Defend your opinion or comply to given one - do what you think is more genuine and correct.
         How has your opinion changed? What is your opinion now?
 
-        Message to react: {message}
+        Message to react: (from user{msg_from_user}) {message}
         """
         feedback = LLM_API.directly_callLLM(prompt)
         self.pro_arguments = LLM_API.directly_callLLM(f"""List only argumnets in favor of the statement: {statement}
@@ -67,7 +67,7 @@ def classify_opinion_numerically(statement, opinion, expression_by_polarity):
             You can use this grading: {str(expression_by_polarity)}
             """
             user_prompt = f"Given opinion: {opinion}"
-            result = LLM_API.callLLM(system_prompt, user_prompt)
+            result = LLM_API.callLLM(system_prompt, user_prompt, "llama3.2")
             for i in range(len(result)):
                 if str.isdigit(result[i]):
                     num = int(result[i])

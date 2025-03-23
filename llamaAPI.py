@@ -4,13 +4,13 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, HumanMessage
 from utils import debug_print
 
-def callLLM(system_prompt, user_prompt):
-    llm = ChatOllama(model = "llama3.2") 
+def callLLM(system_prompt, user_prompt, model = "mistral"):
+    llm = ChatOllama(model = model) 
 
     template = """
-        {system_prompt}
-        ------------------------------
         {user_prompt}
+        ------------------------------
+        {system_prompt}
 
         Print text as a real human messaging in solcial network, less than 100 words, within one paragraph.
         """
