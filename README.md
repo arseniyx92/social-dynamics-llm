@@ -2,9 +2,9 @@
 
 Statement: "People should have a right to keep and bear arms."
 
-!img [positive bias](mean_opinion_classification_pro_bias.png)
+![positive bias](mean_opinion_classification_pro_bias.png)
 
-!img [negative bias](mean_opinion_classification_con_bias.png)
+![negative bias](mean_opinion_classification_con_bias.png)
 
 Maybe lack of samples (10 LLM calls for each number of arguments). But only positivewise grading effect visible.
 
