@@ -23,20 +23,42 @@ expression_by_polarity = {
 
 pro_arguments = " ".join([get_argument_by_number("pro_arguments.txt", i) for i in [1, 4, 6]])
 con_arguments = " ".join([get_argument_by_number("con_arguments.txt", i) for i in [7, 5, 3, 2]])
-## opinion = LLM_API.callLLM(f"Pro-arguments: {pro_arguments}\nCon-arguments: {con_arguments}. You may use some of them internally but only to make up an opinion to express.", f"Generate opinion about the statement: {statement} using pros and cons and maybe coming up with some new ones. You are more likely to be agains gun legalization, behave more personal, like a human - your opinion may change.")
-# expr = expression_by_polarity["1"]
-# opinion = LLM_API.callLLM(f"Pro-arguments (you won't use them if you are completely against): {pro_arguments}\nCon-arguments (you won't use them if you are in favor): {con_arguments}. You may use some of them internally but only to make up an opinion to express.", f"Generate opinion about the statement: {statement} using pros and cons and maybe coming up with some new ones. {expr}, behave more personal, like a human - your opinion may change.")
-
-agent_instance = agent.Agent(**{
+agent_instance1 = agent.Agent(**{
     "user_id": 1,
     "pro_arguments": pro_arguments,
     "con_arguments": con_arguments,
     "opinion": "",
-    "polarity": 3
+    "polarity": 1
 })
 
-# print(agent_instance.polarity)
+pro_arguments = " ".join([get_argument_by_number("pro_arguments.txt", i) for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]])
+con_arguments = " ".join([get_argument_by_number("con_arguments.txt", i) for i in []])
+agent_instance2 = agent.Agent(**{
+    "user_id": 2,
+    "pro_arguments": pro_arguments,
+    "con_arguments": con_arguments,
+    "opinion": "",
+    "polarity": 4
+})
 
-msg = agent_instance.write_message(statement, expression_by_polarity)
+msg1 = agent_instance1.write_message(statement, expression_by_polarity)
+print("Agent1's message: ", msg1, '\n')
+print("Agent1's polarity: ", agent_instance1.polarity, '\n')
 
-agent_instance.react_to_message(msg, statement)
+msg2 = agent_instance2.write_message(statement, expression_by_polarity)
+print("Agent2's message: ", msg2, '\n')
+print("Agent2's polarity: ", agent_instance2.polarity, '\n')
+
+reaction = agent_instance1.react_to_message(msg2, statement)
+print("Agent1's arguments: ", agent_instance1.pro_arguments, '\n=====\n', agent_instance1.con_arguments, '\n')
+
+msg2 = agent_instance2.write_message(statement, expression_by_polarity)
+print("Agent2's message: ", msg2, '\n')
+print("Agent2's polarity: ", agent_instance2.polarity, '\n')
+
+reaction = agent_instance1.react_to_message(msg2, statement)
+print("Agent1's arguments: ", agent_instance1.pro_arguments, '\n=====\n', agent_instance1.con_arguments, '\n')
+
+msg11 = agent_instance1.write_message(statement, expression_by_polarity)
+print("Agent1's message: ", msg11, '\n')
+print("Agent1's polarity: ", agent_instance1.polarity, '\n')
