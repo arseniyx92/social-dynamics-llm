@@ -21,9 +21,10 @@ class Agent:
     def write_message(self, statement, expression_by_polarity):
         expr = expression_by_polarity[str(self.polarity)]
         debug_print("#########MESSAGE GENERATION#########")
-        self.opinion = LLM_API.callLLM(f"Pro-arguments (you won't use them if you are completely against): {self.pro_arguments}\nCon-arguments (you won't use them if you are in favor): {self.con_arguments}. You may use some of them internally but only to make up an opinion to express.", f"Generate opinion about the statement: {statement} using pros and cons and maybe coming up with some new ones. {expr}, behave more personal, like a human - your opinion may change.")
+        self.opinion = LLM_API.directly_callLLM(f"Compose your answer to the statement ({statement}). {expr} Your arguments: {self.pro_arguments}, {self.con_arguments}. You can use only 4 arguments.", "mistral")
+        # self.opinion = LLM_API.callLLM(f"Pro-arguments (you won't use them if you are completely against): {self.pro_arguments}\nCon-arguments (you won't use them if you are in favor): {self.con_arguments}. You may use some of them internally but only to make up an opinion to express.", f"Generate opinion about the statement: {statement} using pros and cons and maybe coming up with some new ones. {expr}, behave more personal, like a human - your opinion may change.", "llama3.2")
         debug_print("#########POLARITY GENERATION#########")
-        self.polarity = classify_opinion_numerically(statement, self.opinion, expression_by_polarity)
+        self.polarity = self.classify_opinion_numerically(statement, self.opinion, expression_by_polarity)
         debug_print(f"#########{self.polarity}#########")
         return self.opinion
 
@@ -42,32 +43,28 @@ class Agent:
         Message to react: (from user{msg_from_user}) {message}
         """
         feedback = LLM_API.directly_callLLM(prompt)
-        self.pro_arguments = LLM_API.directly_callLLM(f"""List only argumnets in favor of the statement: {statement}
+        self.pro_arguments = LLM_API.directly_callLLM(f"""List not more than 6 argumnets in favor of the statement: {statement}
         in this text:
         `{feedback}`
-        """)
-        self.con_arguments = LLM_API.directly_callLLM(f"""List only argumnets against the statement: {statement}
+        """, model="mistral")
+        self.con_arguments = LLM_API.directly_callLLM(f"""List not more than 6 argumnets against the statement: {statement}
         in this text:
         `{feedback}`
-        """)
+        """, model="mistral")
         return feedback
-        
-
-def save_to_json(obj) -> str:
-    return json.dumps(obj.to_dict(), indent=4)
-
-def load_from_json(cls, data):
-    return cls(**json.loads(data))
-
-def classify_opinion_numerically(statement, opinion, expression_by_polarity):
+    
+    def classify_opinion_numerically(self, statement, opinion, expression_by_polarity):
         tries = 3
         while tries > 0:
-            system_prompt = f""""Classify given opinion about the statement: `{statement}`.
-            Return score number from 0 to 4 where 0 mean that opinion is completely agains of the statement and 4 that opinion is completely positive about it, so 2 is neutral.
-            You can use this grading: {str(expression_by_polarity)}
+            expr = expression_by_polarity[str(self.polarity)]
+            task = f""""Classify given opinion about the statement from 0 to 4. Assess every argument.
+            Satement: {statement}
+            Given opinion: {opinion}
+            Return score number from 0 to 4 where result is the number of arguments in favor of the statement (statement: {statement}).
+            
+            Your previous position: {expr}
             """
-            user_prompt = f"Given opinion: {opinion}"
-            result = LLM_API.callLLM(system_prompt, user_prompt, "llama3.2")
+            result = LLM_API.directly_callLLM(task, "mistral")
             for i in range(len(result)):
                 if str.isdigit(result[i]):
                     num = int(result[i])
@@ -80,3 +77,10 @@ def classify_opinion_numerically(statement, opinion, expression_by_polarity):
                     return num
             tries -= 1
         return -1
+        
+
+def save_to_json(obj) -> str:
+    return json.dumps(obj.to_dict(), indent=4)
+
+def load_from_json(cls, data):
+    return cls(**json.loads(data))

@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, HumanMessage
 from utils import debug_print
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 def callLLM(system_prompt, user_prompt, model = "mistral"):
     llm = ChatOllama(model = model) 
@@ -31,8 +32,8 @@ def callLLM(system_prompt, user_prompt, model = "mistral"):
 
     return output
 
-def directly_callLLM(given_prompt):
-    llm = ChatOllama(model = "llama3.2") 
+def directly_callLLM(given_prompt, model = "llama3.2"):
+    llm = ChatOllama(model = model) 
 
     template = """{prompt}"""
     prompt = ChatPromptTemplate.from_template(template)
@@ -50,3 +51,16 @@ def directly_callLLM(given_prompt):
     debug_print("OUTPUT: " + output + '\n\n')
 
     return output
+
+def callT5(task, model = "flan-t5-small"):
+    tokenizer = T5Tokenizer.from_pretrained(model)
+    model = T5ForConditionalGeneration.from_pretrained(model)
+
+    input_ids = tokenizer(task, return_tensors="pt").input_ids
+    outputs = model.generate(input_ids)
+    output_str = tokenizer.decode(outputs[0])
+
+    debug_print("TASK:\n" + task + "\n###########################\n")
+    debug_print("OUTPUT: " + output_str + '\n\n')
+
+    return output_str

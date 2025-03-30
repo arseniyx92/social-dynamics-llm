@@ -174,3 +174,35 @@ Agent1's message:  "Honestly, I've been thinking a lot about the right to bear a
 
 Agent1's polarity:  2
 ```
+
+### Numerical assessment of opinion
+```
+#########POLARITY GENERATION#########PROMPT:
+"Classify given opinion about the statement from 0 to 4. Assess every argument.
+            Satement: People should have a right to keep and bear arm.
+            Given opinion: 1. Public Safety: The presence of firearms in society can lead to increased violence, accidents, and deaths. By restricting or eliminating access to firearms, governments can reduce the risk of harm to individuals and communities.
+
+2. Gun Violence Epidemic: The United States experiences a high rate of gun-related deaths and injuries compared to other developed countries. Limiting access to firearms could help mitigate this epidemic and reduce the number of lives lost.
+
+3. Easy Access to Firearms by Children and Mentally Unstable Individuals: With insufficient background checks and regulations, children and mentally unstable individuals can easily acquire firearms, posing a significant risk to themselves and others.
+
+4. Economic Burden: Gun-related injuries and deaths result in significant economic burdens on healthcare systems, emergency services, and lost productivity. Reducing the availability of firearms could help alleviate these costs.
+            Return score number from 0 to 4 where 0 mean that all arguments are completely agains of the statement, 1 - one in favor, 2 - two in favor, 3 - three in favor, 4 - all in favor.
+            
+###########################
+OUTPUT: 3
+
+Here's my assessment:
+
+1. Public Safety (Against): This argument suggests that the presence of firearms in society can lead to increased violence, accidents, and deaths. The counterargument is that the right to bear arms is for self-defense and law enforcement purposes. However, it does not refute the point about potential dangers associated with easy access to firearms.
+
+2. Gun Violence Epidemic (In Favor): This argument highlights the high rate of gun violence in the U.S., which can be mitigated by restricting or eliminating access to firearms. The counterargument is that guns are not inherently the problem but rather misuse and lack of responsible ownership.
+
+3. Easy Access to Firearms by Children and Mentally Unstable Individuals (In Favor): This argument points out the insufficient background checks and regulations, which can allow children and mentally unstable individuals to access firearms. The counterargument is that proper education, licensing requirements, and responsible ownership can minimize this risk.
+
+4. Economic Burden (In Favor): This argument emphasizes the economic costs associated with gun violence, such as healthcare expenses and lost productivity. The counterargument could be that the cost of implementing stricter firearm regulations is another economic burden to consider. However, it does not refute the point about the significant economic burdens caused by gun violence.
+
+Overall, the given opinion presents three arguments in favor of restricting or eliminating access to firearms (Gun Violence Epidemic, Easy Access to Firearms by Children and Mentally Unstable Individuals, Economic Burden), which suggests a strong stance against the statement that people should have a right to keep and bear arms.
+
+#########3#########
+```
