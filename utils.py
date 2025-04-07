@@ -17,11 +17,11 @@ def create_html(filename):
         }
         .pro-args {
             font-size: 12px;
-            color: #00aa00; /* Green */
+            color: #e600ff;
         }
         .con-args {
             font-size: 12px;
-            color: #ff0000; /* Red */
+            color: #3c00ff;
         }
         .agent-id {
             font-weight: bold;
@@ -49,6 +49,14 @@ def create_html(filename):
     </style>
 </head>
 <body>
+<div class="agent-container">
+Color map:\n
+<span class="agent-text-0">strictly against</span>\n
+<span class="agent-text-1">against but not sure</span>\n
+<span class="agent-text-2">neutral</span>\n
+<span class="agent-text-3">in favor but not sure</span>\n
+<span class="agent-text-4">strictly in favor</span>\n
+</div>
         """)
 
 def finish_with_html(filename):

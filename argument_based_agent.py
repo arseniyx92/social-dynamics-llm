@@ -43,12 +43,12 @@ class Agent:
         Message to react: (from user{msg_from_user}) {message}
         """
         feedback = LLM_API.directly_callLLM(prompt)
-        self.pro_arguments = LLM_API.directly_callLLM(f"""List not more than 6 argumnets in favor of the statement: {statement}
-        in this text:
+        self.pro_arguments = LLM_API.directly_callLLM(f"""List from 1 to 6 argumnets in favor of the statement: {statement}
+        strictly from this text:
         `{feedback}`
         """, model="mistral")
-        self.con_arguments = LLM_API.directly_callLLM(f"""List not more than 6 argumnets against the statement: {statement}
-        in this text:
+        self.con_arguments = LLM_API.directly_callLLM(f"""List from 1 to 6 argumnets against the statement: {statement}
+        strictly from this text:
         `{feedback}`
         """, model="mistral")
         return feedback
@@ -62,8 +62,11 @@ class Agent:
             Given opinion: {opinion}
             Return score number from 0 to 4 where result is the number of arguments in favor of the statement (statement: {statement}).
             
-            Your previous position: {expr}
+            Assess arguments the same way they are used. Do not improvise conter-arguments.
+
+            Return format: $N$ - [explanation], where N is number from 0 to 4
             """
+            # Your previous position: {expr}
             result = LLM_API.directly_callLLM(task, "mistral")
             for i in range(len(result)):
                 if str.isdigit(result[i]):
