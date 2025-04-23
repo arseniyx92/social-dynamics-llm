@@ -6,6 +6,9 @@ from utils import debug_print
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 def callLLM(system_prompt, user_prompt, model = "mistral"):
+    if model == "mistral": # TODO
+        model = "deepseek-llm"
+        
     llm = ChatOllama(model = model) 
 
     template = """
@@ -33,6 +36,9 @@ def callLLM(system_prompt, user_prompt, model = "mistral"):
     return output
 
 def directly_callLLM(given_prompt, model = "llama3.2"):
+    if model == "mistral": # TODO
+        model = "deepseek-llm"
+    
     llm = ChatOllama(model = model) 
 
     template = """{prompt}"""

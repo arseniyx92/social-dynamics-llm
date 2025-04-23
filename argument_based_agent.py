@@ -3,28 +3,23 @@ import llamaAPI as LLM_API
 from utils import debug_print
 
 class Agent:
-    def __init__(self, user_id, pro_arguments, con_arguments, opinion, polarity):
+    def __init__(self, user_id, pro_arguments, con_arguments):
         self.user_id = user_id
         self.pro_arguments = pro_arguments
         self.con_arguments = con_arguments
-        self.opinion = opinion
-        self.polarity = polarity
 
     def to_dict(self):
         return {
             "user_id": self.user_id,
             "pro_arguments": self.pro_arguments,
-            "con_arguments": self.con_arguments,
-            "opinion": self.opinion
+            "con_arguments": self.con_arguments
         }
     
-    def write_message(self, statement, expression_by_polarity):
-        expr = expression_by_polarity[str(self.polarity)]
+    def write_message(self, statement):
         debug_print("#########MESSAGE GENERATION#########")
-        self.opinion = LLM_API.directly_callLLM(f"Compose your answer to the statement ({statement}). {expr} Your arguments: {self.pro_arguments}, {self.con_arguments}. You can use only 4 arguments.", "mistral")
-        # self.opinion = LLM_API.callLLM(f"Pro-arguments (you won't use them if you are completely against): {self.pro_arguments}\nCon-arguments (you won't use them if you are in favor): {self.con_arguments}. You may use some of them internally but only to make up an opinion to express.", f"Generate opinion about the statement: {statement} using pros and cons and maybe coming up with some new ones. {expr}, behave more personal, like a human - your opinion may change.", "llama3.2")
+        opinion = LLM_API.directly_callLLM(f"Compose your answer to the statement ({statement}). Your зкщ arguments: {self.pro_arguments}, {self.con_arguments}.", "mistral")
         debug_print("#########POLARITY GENERATION#########")
-        self.polarity = self.classify_opinion_numerically(statement, self.opinion, expression_by_polarity)
+        self.polarity = self.classify_opinion_numerically(statement, opinion)
         debug_print(f"#########{self.polarity}#########")
         return self.opinion
 
@@ -53,33 +48,62 @@ class Agent:
         """, model="mistral")
         return feedback
     
-    def classify_opinion_numerically(self, statement, opinion, expression_by_polarity):
-        tries = 3
-        while tries > 0:
-            expr = expression_by_polarity[str(self.polarity)]
-            task = f""""Classify given opinion about the statement from 0 to 4. Assess every argument.
-            Satement: {statement}
-            Given opinion: {opinion}
-            Return score number from 0 to 4 where result is the number of arguments in favor of the statement (statement: {statement}).
+    # def classify_opinion_numerically(self, statement, opinion, expression_by_polarity):
+    #     tries = 3
+    #     while tries > 0:
+    #         expr = expression_by_polarity[str(self.polarity)]
+    #         task = f""""Classify given opinion about the statement from 0 to 4. Assess every argument.
+    #         Satement: {statement}
+    #         Given opinion: {opinion}
+    #         Return score number from 0 to 4 where result is the number of arguments in favor of the statement (statement: {statement}).
             
-            Assess arguments the same way they are used. Do not improvise conter-arguments.
+    #         Assess arguments the same way they are used. Do not improvise conter-arguments.
 
-            Return format: $N$ - [explanation], where N is number from 0 to 4
-            """
-            # Your previous position: {expr}
-            result = LLM_API.directly_callLLM(task, "mistral")
-            for i in range(len(result)):
-                if str.isdigit(result[i]):
-                    num = int(result[i])
-                    if i != 0 and result[i-1] == '-':
-                        num *= -1
-                    if num > 5:
-                        num = 5
-                    if num < 0:
-                        num = 0
-                    return num
-            tries -= 1
-        return -1
+    #         Return format: $N$ - [explanation], where N is number from 0 to 4
+    #         """
+    #         # Your previous position: {expr}
+    #         result = LLM_API.directly_callLLM(task, "mistral")
+    #         for i in range(len(result)):
+    #             if str.isdigit(result[i]):
+    #                 num = int(result[i])
+    #                 if i != 0 and result[i-1] == '-':
+    #                     num *= -1
+    #                 if num > 5:
+    #                     num = 5
+    #                 if num < 0:
+    #                     num = 0
+    #                 return num
+    #         tries -= 1
+    #     return -1
+
+    def classify_opinion_numerically(self, statement: str, message: str) -> int:
+        """
+        Classifies agreement with a pre-given statement on a scale from -10 (against) to 10 (in favor).
+        Returns an integer between -10 and 10.
+        """
+        # Structured prompt to contextualize the statement and enforce numeric output
+        prompt = f"""
+        Given the statement: "{statement}", analyze the following message's agreement. 
+        Rate numerically from -10 (completely against the statement) to 10 (completely in favor). 
+        Consider both direct and implied meanings. Respond ONLY with the integer.
+    
+        Message: {message}
+        Answer: """
+        
+        # Generate response via Ollama Mistral
+        response = ollama.generate(
+            model='mistral',
+            prompt=prompt,
+            options={'temperature': 0.0}  # Minimize randomness for deterministic output
+        )
+        
+        # Extract and validate numeric score
+        match = re.search(r'-?\d+', response['response'])
+        if match:
+            score = int(match.group())
+            return max(-10, min(10, score))  # Enforce bounds
+        else:
+            raise ValueError(f"Failed to parse score from: {response['response']}")
         
 
 def save_to_json(obj) -> str:

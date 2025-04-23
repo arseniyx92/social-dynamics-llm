@@ -27,9 +27,7 @@ con_arguments = " ".join([get_argument_by_number("con_arguments.txt", i) for i i
 agent_instance1 = agent.Agent(**{
     "user_id": 1,
     "pro_arguments": pro_arguments,
-    "con_arguments": con_arguments,
-    "opinion": "",
-    "polarity": 0
+    "con_arguments": con_arguments
 })
 
 pro_arguments = " ".join([get_argument_by_number("pro_arguments.txt", i) for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]])
@@ -37,16 +35,14 @@ con_arguments = " ".join([get_argument_by_number("con_arguments.txt", i) for i i
 agent_instance2 = agent.Agent(**{
     "user_id": 2,
     "pro_arguments": pro_arguments,
-    "con_arguments": con_arguments,
-    "opinion": "",
-    "polarity": 4
+    "con_arguments": con_arguments
 })
 
 HTML_REPRESENTATION_FILE = "view_dialog.html"
 agents_dynamics = [[], []]
 
 def generate_message(agent):
-    msg = agent.write_message(statement, expression_by_polarity)
+    msg = agent.write_message(statement)
     print(f"Agent{agent.user_id}'s message: ", msg, '\n')
     print(f"Agent{agent.user_id}'s polarity: ", agent.polarity, '\n')
     utils.message_to_html(HTML_REPRESENTATION_FILE, f"""
@@ -72,10 +68,12 @@ def react(agent_to, agent_from, message):
 
 # utils.create_html(HTML_REPRESENTATION_FILE)
 
-# msg1 = generate_message(agent_instance1)
+msg1 = generate_message(agent_instance1)
 
-# msg2 = generate_message(agent_instance2)
-# react(agent_instance1, agent_instance2, msg2)
+msg2 = generate_message(agent_instance2)
+react(agent_instance1, agent_instance2, msg2)
+
+exit(0)
 
 # msg2 = generate_message(agent_instance2)
 # react(agent_instance1, agent_instance2, msg2)
