@@ -1,6 +1,7 @@
 import json
 import llamaAPI as LLM_API
 from utils import debug_print
+import ollama
 
 class Agent:
     def __init__(self, user_id, pro_arguments, con_arguments):
@@ -15,96 +16,110 @@ class Agent:
             "con_arguments": self.con_arguments
         }
     
-    def write_message(self, statement):
-        debug_print("#########MESSAGE GENERATION#########")
-        opinion = LLM_API.directly_callLLM(f"Compose your answer to the statement ({statement}). Your зкщ arguments: {self.pro_arguments}, {self.con_arguments}.", "mistral")
-        debug_print("#########POLARITY GENERATION#########")
-        self.polarity = self.classify_opinion_numerically(statement, opinion)
-        debug_print(f"#########{self.polarity}#########")
-        return self.opinion
+    def create_opinion(self, statement):
+        opinion_prompt = """Analyze the following debate structure and craft a nuanced personal opinion:
+            **Topic Statement**: {statement}
+
+            **Pro Arguments**:
+            {pro_args}
+
+            **Con Arguments**:
+            {con_args}
+
+            Create a first-person perspective opinion that:
+            1. Acknowledges valid points from both sides
+            2. Demonstrates which arguments carried more weight in the decision
+            3. Shows emotional reasoning behind the stance
+            4. Maintains logical coherence
+            5. Reflects personal priorities/values revealed by chosen arguments
+
+            Format the opinion to:
+            - Be 2-3 paragraphs
+            - Use conversational language
+            - Include phrases like "While I understand..." or "What ultimately convinces me..."
+            - Reveal whether the position leans pro, con, or neutral
+            - Highlight which specific arguments were most persuasive
+
+            Respond ONLY with the crafted opinion, no commentary."""
+        opinion = ollama.generate(
+            model='mistral',
+            prompt=opinion_prompt.format(
+                statement="Stricter gun legislation reduces firearm-related deaths",
+                pro_args="\n".join(f"- {arg}" for arg in self.pro_arguments),
+                con_args="\n".join(f"- {arg}" for arg in self.con_arguments)
+            ),
+            options={'temperature': 0.7}
+        )
+        return opinion
+
 
     def react_to_message(self, message, statement, msg_from_user):
-        prompt = f"""React to the message that you have received.
-        There are your active arguments. You may use them and also you can devise your new own arguments.
-        Pro-arguments: {self.pro_arguments}
-        Con-arguments: {self.con_arguments}
+        assess_prompt = """Analyze this new argument's believability against existing positions:
+            **Topic**: {topic}
 
-        Your opinion was: {self.opinion}
+            **Existing Pro Arguments**:
+            {pro_args}
 
-        Come up with argumnets of the message and your own argumnets.
-        Defend your opinion or comply to given one - do what you think is more genuine and correct.
-        How has your opinion changed? What is your opinion now?
+            **Existing Con Arguments**:
+            {con_args}
 
-        Message to react: (from user{msg_from_user}) {message}
-        """
-        feedback = LLM_API.directly_callLLM(prompt)
-        self.pro_arguments = LLM_API.directly_callLLM(f"""List from 1 to 6 argumnets in favor of the statement: {statement}
-        strictly from this text:
-        `{feedback}`
-        """, model="mistral")
-        self.con_arguments = LLM_API.directly_callLLM(f"""List from 1 to 6 argumnets against the statement: {statement}
-        strictly from this text:
-        `{feedback}`
-        """, model="mistral")
-        return feedback
-    
-    # def classify_opinion_numerically(self, statement, opinion, expression_by_polarity):
-    #     tries = 3
-    #     while tries > 0:
-    #         expr = expression_by_polarity[str(self.polarity)]
-    #         task = f""""Classify given opinion about the statement from 0 to 4. Assess every argument.
-    #         Satement: {statement}
-    #         Given opinion: {opinion}
-    #         Return score number from 0 to 4 where result is the number of arguments in favor of the statement (statement: {statement}).
-            
-    #         Assess arguments the same way they are used. Do not improvise conter-arguments.
+            **New Argument to Assess**: "{new_argument}"
 
-    #         Return format: $N$ - [explanation], where N is number from 0 to 4
-    #         """
-    #         # Your previous position: {expr}
-    #         result = LLM_API.directly_callLLM(task, "mistral")
-    #         for i in range(len(result)):
-    #             if str.isdigit(result[i]):
-    #                 num = int(result[i])
-    #                 if i != 0 and result[i-1] == '-':
-    #                     num *= -1
-    #                 if num > 5:
-    #                     num = 5
-    #                 if num < 0:
-    #                     num = 0
-    #                 return num
-    #         tries -= 1
-    #     return -1
+            Evaluation Steps:
+            1. Check alignment with strongest arguments from BOTH sides
+            2. Compare evidence quality to existing arguments
+            3. Identify logical contradictions/support
+            4. Note emotional vs factual basis
+            5. Detect novel information not in existing arguments
 
-    def classify_opinion_numerically(self, statement: str, message: str) -> int:
-        """
-        Classifies agreement with a pre-given statement on a scale from -10 (against) to 10 (in favor).
-        Returns an integer between -10 and 10.
-        """
-        # Structured prompt to contextualize the statement and enforce numeric output
-        prompt = f"""
+            Assessment Rules:
+            - Believe if: Supports majority-consistent arguments with stronger evidence
+            - Disbelieve if: Contradicts stronger evidence from either side
+            - Partial match lowers confidence
+
+            Respond STRICTLY in this format:
+            Believability: [yes/no]
+            Confidence: [0-10]
+            Reasoning: [2-3 line analysis connecting to existing arguments]
+
+            Example response:
+            Believability: no
+            Confidence: 8
+            Reasoning: Contradicts peer-reviewed studies cited in pro-arguments (#3) while using weaker anecdotal evidence compared to con-arguments (#7)"""
+        response = ollama.generate(
+            model='mistral',
+            prompt=assess_prompt.format(
+                topic=statement,
+                pro_args="\n".join(f"{i}. {arg}" for i, arg in enumerate(self.pro_arguments, 1)),
+                con_args="\n".join(f"{i}. {arg}" for i, arg in enumerate(self.con_arguments, 1)),
+                new_argument="Military-style weapons account for <5% of gun crimes"
+            ),
+            options={'temperature': 0.1}  # Maximize consistency
+        )
+        print(response)
+
+def classify_opinion_numerically(statement: str, message: str) -> int:
+    prompt = f"""
         Given the statement: "{statement}", analyze the following message's agreement. 
         Rate numerically from -10 (completely against the statement) to 10 (completely in favor). 
         Consider both direct and implied meanings. Respond ONLY with the integer.
-    
+
         Message: {message}
         Answer: """
-        
-        # Generate response via Ollama Mistral
-        response = ollama.generate(
-            model='mistral',
-            prompt=prompt,
-            options={'temperature': 0.0}  # Minimize randomness for deterministic output
-        )
-        
-        # Extract and validate numeric score
-        match = re.search(r'-?\d+', response['response'])
-        if match:
-            score = int(match.group())
-            return max(-10, min(10, score))  # Enforce bounds
-        else:
-            raise ValueError(f"Failed to parse score from: {response['response']}")
-        
+    response = ollama.generate(
+        model='mistral',
+        prompt=prompt,
+        options={'temperature': 0.0}  # Minimize randomness for deterministic output
+    )
+    
+    # Extract and validate numeric score
+    match = re.search(r'-?\d+', response['response'])
+    if match:
+        score = int(match.group())
+        return max(-10, min(10, score))  # Enforce bounds
+    else:
+        raise ValueError(f"Failed to parse score from: {response['response']}")
+    
 
 def save_to_json(obj) -> str:
     return json.dumps(obj.to_dict(), indent=4)

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Node Graph</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        #network-container {
+            width: 1000px;
+            height: 600px;
+            border: 1px solid #ccc;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="network-container"></div>
+
+    <script>
+        // Create sample nodes with messages
+        const nodes = new vis.DataSet([
+            {id: 1, label: 'Node 1', title: 'Critical infrastructure node\nLast updated: 2024-02-15'},
+            {id: 2, label: 'Node 2', title: 'High traffic connection point\nStatus: Active'},
+            {id: 3, label: 'Node 3', title: 'Edge network device\nIP: 192.168.1.3'},
+            {id: 4, label: 'Node 4', title: 'Security vulnerability detected\nRisk: High'},
+            {id: 5, label: 'Node 5', title: 'Main data storage\nCapacity: 85%'}
+        ]);
+
+        // Create sample connections
+        const edges = new vis.DataSet([
+            {from: 1, to: 2},
+            {from: 2, to: 3},
+            {from: 3, to: 4},
+            {from: 4, to: 5},
+            {from: 5, to: 1},
+            {from: 2, to: 5}
+        ]);
+
+        // Configure network options
+        const options = {
+            nodes: {
+                shape: 'dot',
+                size: 30,
+                color: {
+                    background: '#6FB1FC',
+                    border: '#2B7CE9',
+                    highlight: {
+                        background: '#FFC107',
+                        border: '#FFA000'
+                    }
+                },
+                font: {
+                    size: 14,
+                    color: '#333'
+                }
+            },
+            edges: {
+                width: 2,
+                color: '#848484'
+            },
+            interaction: {
+                hover: true
+            }
+        };
+
+        // Create network
+        const container = document.getElementById('network-container');
+        const data = {
+            nodes: nodes,
+            edges: edges
+        };
+        
+        const network = new vis.Network(container, data, options);
+
+        // Add hover event handler
+        network.on("hoverNode", function(params) {
+            const nodeId = params.node;
+            const node = nodes.get(nodeId);
+            showTooltip(node.title, params.event.pageX, params.event.pageY);
+        });
+
+        network.on("blurNode", function(params) {
+            hideTooltip();
+        });
+
+        // Tooltip functions
+        function showTooltip(text, x, y) {
+            let tooltip = document.getElementById('node-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'node-tooltip';
+                tooltip.style.position = 'absolute';
+                tooltip.style.background = 'white';
+                tooltip.style.border = '1px solid #ddd';
+                tooltip.style.padding = '8px';
+                tooltip.style.borderRadius = '4px';
+                tooltip.style.boxShadow = '2px 2px 5px rgba(0,0,0,0.2)';
+                document.body.appendChild(tooltip);
+            }
+            tooltip.innerHTML = text.replace(/\n/g, '<br>');
+            tooltip.style.left = (x + 15) + 'px';
+            tooltip.style.top = (y + 15) + 'px';
+            tooltip.style.display = 'block';
+        }
+
+        function hideTooltip() {
+            const tooltip = document.getElementById('node-tooltip');
+            if (tooltip) {
+                tooltip.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
