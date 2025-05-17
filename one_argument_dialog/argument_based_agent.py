@@ -1,7 +1,10 @@
 import json
-import llamaAPI as LLM_API
+import re
 from utils import debug_print
 import ollama
+import random
+from datetime import datetime
+random.seed(datetime.now().timestamp())
 
 class Agent:
     def __init__(self, user_id, pro_arguments, con_arguments):
@@ -17,43 +20,37 @@ class Agent:
         }
     
     def create_opinion(self, statement):
-        opinion_prompt = """Analyze the following debate structure and craft a nuanced personal opinion:
-            **Topic Statement**: {statement}
+        opinion_prompt = """Act as a person whose only knowledge and reasoning about the topic comes from the arguments provided below. Your opinion must strictly reflect the arguments given—no external knowledge, no hedging.
 
-            **Pro Arguments**:
-            {pro_args}
+Topic Statement: "{statement}"
+Arguments in My Mind:
 
-            **Con Arguments**:
-            {con_args}
+Pro: {pro_args}
 
-            Create a first-person perspective opinion that:
-            1. Acknowledges valid points from both sides
-            2. Demonstrates which arguments carried more weight in the decision
-            3. Shows emotional reasoning behind the stance
-            4. Maintains logical coherence
-            5. Reflects personal priorities/values revealed by chosen arguments
+Con: {con_args}
 
-            Format the opinion to:
-            - Be 2-3 paragraphs
-            - Use conversational language
-            - Include phrases like "While I understand..." or "What ultimately convinces me..."
-            - Reveal whether the position leans pro, con, or neutral
-            - Highlight which specific arguments were most persuasive
+Craft a first-person opinion that:
 
-            Respond ONLY with the crafted opinion, no commentary."""
-        opinion = ollama.generate(
-            model='mistral',
-            prompt=opinion_prompt.format(
-                statement="Stricter gun legislation reduces firearm-related deaths",
+1. Cites the most convincing argument(s) from your "mind."
+2. Uses phrases like "Based on what I know..." or "The strongest point to me is...".
+3. Ends with a clear stance: 'I support/reject [statement].'"""
+        prompt = opinion_prompt.format(
+                statement=statement,
                 pro_args="\n".join(f"- {arg}" for arg in self.pro_arguments),
                 con_args="\n".join(f"- {arg}" for arg in self.con_arguments)
-            ),
+            )
+        opinion = ollama.generate(
+            model='mistral',
+            prompt=prompt,
             options={'temperature': 0.7}
         )
-        return opinion
+        return opinion['response']
 
+    def say_argument(self):
+        args = self.pro_arguments + self.con_arguments
+        return random.choice(args)
 
-    def react_to_message(self, message, statement, msg_from_user):
+    def react_to_message(self, statement, given_argument, is_pro_arg):
         assess_prompt = """Analyze this new argument's believability against existing positions:
             **Topic**: {topic}
 
@@ -92,20 +89,31 @@ class Agent:
                 topic=statement,
                 pro_args="\n".join(f"{i}. {arg}" for i, arg in enumerate(self.pro_arguments, 1)),
                 con_args="\n".join(f"{i}. {arg}" for i, arg in enumerate(self.con_arguments, 1)),
-                new_argument="Military-style weapons account for <5% of gun crimes"
+                new_argument=given_argument
             ),
             options={'temperature': 0.1}  # Maximize consistency
         )
-        print(response)
+        result = detect_yes_no(response['response'])
+        if result == 1:
+            if is_pro_arg:
+                self.pro_arguments.append(given_argument)
+            else:
+                self.con_arguments.append(given_argument)
+        return response['response']
 
 def classify_opinion_numerically(statement: str, message: str) -> int:
     prompt = f"""
-        Given the statement: "{statement}", analyze the following message's agreement. 
-        Rate numerically from -10 (completely against the statement) to 10 (completely in favor). 
-        Consider both direct and implied meanings. Respond ONLY with the integer.
+        Given the statement: {statement}, analyze the following written opinion for its level of agreement. Rate numerically on a scale from -2 to 2, where:
+        -2 = Completely against the statement (direct/implied opposition),
+        -1 = Partially against the statement (qualified disagreement),
+        0 = Neutral/ambiguous (no clear stance or mixed signals),
+        1 = Partially in favor of the statement (qualified support),
+        2 = Completely in favor (direct/implied full alignment).
 
-        Message: {message}
-        Answer: """
+        Consider both explicit arguments and implicit tone. Respond only with the integer rating.
+
+        Opinion to assess: "{message}"
+        Answer:"""
     response = ollama.generate(
         model='mistral',
         prompt=prompt,
@@ -113,6 +121,7 @@ def classify_opinion_numerically(statement: str, message: str) -> int:
     )
     
     # Extract and validate numeric score
+    print("CLASSIFICATION RESULT: ", response['response'])
     match = re.search(r'-?\d+', response['response'])
     if match:
         score = int(match.group())
@@ -126,3 +135,16 @@ def save_to_json(obj) -> str:
 
 def load_from_json(cls, data):
     return cls(**json.loads(data))
+
+def detect_yes_no(text):
+    lower_text = text.lower()
+    
+    yes_pos = lower_text.find('yes')
+    no_pos = lower_text.find('no')
+    
+    if yes_pos != -1 and (no_pos == -1 or yes_pos < no_pos):
+        return 1
+    elif no_pos != -1:
+        return 0
+    else:
+        return -1

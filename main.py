@@ -1,4 +1,4 @@
-import argument_based_agent as agent
+import one_argument_dialog.argument_based_agent as agent
 import llamaAPI as LLM_API
 import utils
 
